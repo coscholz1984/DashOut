@@ -2,6 +2,8 @@
 
 A futuristic endless racer built with **Godot 4.7.2**. Collect power-ups, upgrade your ship, earn new effects and tracks — and break the speed record!
 
+<img src="https://github.com/coscholz1984/DashOut/blob/main/DashOut_Preview.jpg?raw=true" alt="Game preview" width="1200">
+
 ---
 
 ## 📦 Requirements
