@@ -101,7 +101,7 @@ func _build_ui() -> void:
 	layout.add_child(header)
 
 	var title_stack := VBoxContainer.new()
-	var garage_title := _label("DASHOUT // GARAGE", 26)
+	var garage_title := _label("DASHOUT // GARAGE", 42)
 	garage_title.add_theme_font_override("font", _title_font())
 	garage_title.add_theme_color_override(
 		"font_color", Color(0.95, 1.0, 1.0)
