@@ -37,6 +37,20 @@ var _preview_rotation := 0.0
 var preview_track_id := ""
 var preview_model_id := ""
 
+# Shader to animate title, same as in menu_ui.gd
+static var TITLE_SHADER: String = FileAccess.get_file_as_string(
+	"res://shaders/title_gradient.gdshader"
+)
+
+## Creates the ShaderMaterial used by the animated title label.
+## Creates the ShaderMaterial used by the animated title label.
+static func title_material() -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	var shader := Shader.new()
+	shader.code = TITLE_SHADER
+	mat.shader = shader
+
+	return mat
 
 # =============================================================
 # LIFECYCLE
@@ -101,25 +115,24 @@ func _build_ui() -> void:
 	layout.add_child(header)
 
 	var title_stack := VBoxContainer.new()
+	header.add_child(title_stack)
 	var garage_title := _label("DASHOUT // GARAGE", 42)
+
 	garage_title.add_theme_font_override("font", _title_font())
 	garage_title.add_theme_color_override(
 		"font_color", Color(0.95, 1.0, 1.0)
 	)
-	garage_title.add_theme_color_override(
-		"font_outline_color", Color("22d3ee")
-	)
-	garage_title.add_theme_constant_override("outline_size", 6)
-	garage_title.add_theme_color_override(
-		"font_shadow_color", Color("22d3ee")
-	)
-	garage_title.add_theme_constant_override("shadow_offset_x", 2)
-	garage_title.add_theme_constant_override("shadow_offset_y", 2)
+
+	# Add the label before measuring its layout.
 	title_stack.add_child(garage_title)
+	
+	# Wait for the Control layout to be calculated.
+	await get_tree().process_frame
+
+	garage_title.material = title_material()
 
 	cash_label = _label("Credits: 0", 16)
 	title_stack.add_child(cash_label)
-	header.add_child(title_stack)
 
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -849,10 +862,5 @@ func _label(text: String, size: int) -> Label:
 func _title_font() -> FontVariation:
 	var font := FontVariation.new()
 	font.base_font = ThemeDB.fallback_font
-	font.variation_embolden = 0.4
-	font.variation_transform = Transform2D(
-		Vector2(1.0, 0.0),
-		Vector2(0.0, 1.0),
-		Vector2.ZERO
-	)
+	font.variation_embolden = 1.0
 	return font

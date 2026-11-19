@@ -13,28 +13,9 @@ const PANEL_WIDTH := 420.0
 const HELP_WIDTH := 900.0
 
 ## Animated neon shader for the front layer of the DashOut title.
-## Uses SCREEN_UV for a horizontal light sweep across the label,
-## with a subtle pulse and flicker.
-const TITLE_SHADER := "
-shader_type canvas_item;
-uniform float sweep_speed = 0.35;
-uniform float band_width = 0.16;
-uniform vec3 sweep_color = vec3(0.133, 0.827, 0.933); // #22d3ee
-uniform vec3 base_tint = vec3(0.95, 1.0, 1.0);
-void fragment() {
-\tvec4 glyph = texture(TEXTURE, UV);
-\tfloat sweep = fract(TIME * sweep_speed);
-\tfloat d = abs(SCREEN_UV.x - sweep);
-\tfloat band = smoothstep(band_width, 0.0, d);
-\t// Keep the front layer consistently brighter than the dark
-\t// back layer to preserve the title's extruded appearance.
-\tfloat pulse = 0.92 + 0.08 * sin(TIME * 2.2);
-\tfloat flicker = step(0.985, fract(sin(floor(TIME * 14.0)) * 43758.5453));
-\tvec3 rgb = glyph.rgb * base_tint * pulse * (1.0 - 0.15 * flicker);
-\t// Blend the travelling highlight into the glyph colour.
-\trgb = mix(rgb, sweep_color, band * glyph.a * 0.9);
-\tCOLOR = vec4(rgb, glyph.a);
-}"
+static var TITLE_SHADER: String = FileAccess.get_file_as_string(
+	"res://shaders/title_gradient.gdshader"
+)
 
 ## Creates the ShaderMaterial used by the animated title label.
 static func title_material() -> ShaderMaterial:
@@ -42,7 +23,18 @@ static func title_material() -> ShaderMaterial:
 	var shader := Shader.new()
 	shader.code = TITLE_SHADER
 	mat.shader = shader
+
 	return mat
+
+## Applies the animated title material after the menu title
+## has been added to the scene tree and its layout calculated.
+func _apply_title_material_deferred() -> void:
+	await get_tree().process_frame
+
+	if not is_instance_valid(menu_title_front):
+		return
+
+	menu_title_front.material = title_material()
 
 # ------------------------------------------------------------
 # Signals
@@ -192,7 +184,7 @@ func _build_ui() -> void:
 	menu_title_front.add_theme_font_override("font", _title_font)
 	menu_title_front.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_title_front.add_theme_color_override(
-		"font_color", Color(0.95, 1.0, 1.0)
+		"font_color", Color(0.0, 0.0, 0.0)
 	)
 	menu_title_front.add_theme_color_override(
 		"font_outline_color", Color("22d3ee")
@@ -203,13 +195,12 @@ func _build_ui() -> void:
 	)
 	menu_title_front.add_theme_constant_override("shadow_offset_x", 2)
 	menu_title_front.add_theme_constant_override("shadow_offset_y", 2)
-	# Apply the animated shader only to the front layer.
-	# The rear layer retains its static dark appearance.
-	menu_title_front.material = title_material()
-	# Draw the front layer above its parent and offset it slightly
-	# to create the appearance of extruded lettering.
-	menu_title_front.position = Vector2(-4, -4)
+	
 	menu_title.add_child(menu_title_front)
+
+	# Apply the shader after the Control layout has been calculated.
+	_apply_title_material_deferred()
+	
 	menu_container.add_child(menu_title)
 
 	# Resume
