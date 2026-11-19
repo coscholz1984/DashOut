@@ -37,19 +37,13 @@ var _preview_rotation := 0.0
 var preview_track_id := ""
 var preview_model_id := ""
 
-# Shader to animate title, same as in menu_ui.gd
-static var TITLE_SHADER: String = FileAccess.get_file_as_string(
-	"res://shaders/title_gradient.gdshader"
-)
+## Animated neon shader for the front layer of the DashOut title.
+const TITLE_SHADER: Shader = preload("res://shaders/title_gradient.gdshader")
 
-## Creates the ShaderMaterial used by the animated title label.
 ## Creates the ShaderMaterial used by the animated title label.
 static func title_material() -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
-	var shader := Shader.new()
-	shader.code = TITLE_SHADER
-	mat.shader = shader
-
+	mat.shader = TITLE_SHADER
 	return mat
 
 # =============================================================

@@ -36,65 +36,23 @@ const FLAME_OPACITY := 0.55
 ## Additive blending preserves the bright emissive appearance.
 ## Intensity and overdrive are animated at runtime; flame colour
 ## and opacity are supplied by the owning ship.
-const FLAME_SHADER := "
-shader_type spatial;
-render_mode blend_add, unshaded, cull_disabled, depth_draw_never, shadows_disabled;
-
-uniform float intensity = 1.2; // Animated flicker intensity.
-uniform float opacity = 0.55;  // Overall flame opacity.
-uniform float overdrive = 0.0; // Blends the flame toward the overdrive colour.
-uniform float radius = 0.14;   // Rest radius of the sphere in model space.
-uniform vec3 flame_color = vec3(0.25, 0.5, 1.0);       // Base exhaust colour.
-uniform vec3 overdrive_color = vec3(0.66, 0.33, 0.97); // Overdrive exhaust colour.
-
-varying float v_t; // Normalized position along the flame: mouth (0) to tail (1).
-
-void vertex() {
-	// Calculate the gradient position in model space, before the
-	// flame's stretch scale. The local +Z end is anchored at the
-	// engine outlet, so the gradient runs in the negative Z direction.
-	v_t = clamp(0.5 - VERTEX.z / radius * 0.5, 0.0, 1.0);
-}
-
-void fragment() {
-	// Fade the silhouette as the surface turns away from the camera.
-	float edge = abs(dot(normalize(NORMAL), normalize(VIEW)));
-	float body = smoothstep(0.0, 0.45, edge);
-	// Blend the base exhaust colours toward the overdrive tint.
-	vec3 hot = mix(
-		flame_color * 0.55 + vec3(0.5),
-		overdrive_color * 0.55 + vec3(0.45),
-		overdrive
-	);
-	vec3 mid = mix(flame_color, overdrive_color, overdrive);
-	vec3 col = mix(hot, mid, smoothstep(0.0, 0.4, v_t));
-	// Fade the flame to transparency toward its tail.
-	float fade = 1.0 - smoothstep(0.35, 1.0, v_t);
-	ALBEDO = col * intensity;
-	ALPHA = opacity * fade * body;
-}
-"
-static var _flame_shader: Shader
+const FLAME_SHADER: Shader = preload("res://shaders/ship_flame.gdshader")
 
 ## Creates a flame material using the shared exhaust shader.
-## Each ship gets its own material instance so its flicker animation
+## Each ship gets its own material instance so its exhaust animation
 ## remains independent of other ships.
-## The shader resource itself is compiled once and reused.
 static func flame_material(
-	op: float,
-	flame_color := Color(0.25, 0.5, 1.0),
-	overdrive_color := Color(0.66, 0.33, 0.97)
+		op: float,
+		flame_color := Color(0.25, 0.5, 1.0),
+		overdrive_color := Color(0.66, 0.33, 0.97)
 ) -> ShaderMaterial:
-	if _flame_shader == null:
-		_flame_shader = Shader.new()
-		_flame_shader.code = FLAME_SHADER
-	var m := ShaderMaterial.new()
-	m.shader = _flame_shader
-	m.set_shader_parameter("opacity", op)
-	m.set_shader_parameter("radius", 0.14)
-	m.set_shader_parameter("flame_color", flame_color)
-	m.set_shader_parameter("overdrive_color", overdrive_color)
-	return m
+	var mat := ShaderMaterial.new()
+	mat.shader = FLAME_SHADER
+	mat.set_shader_parameter("opacity", op)
+	mat.set_shader_parameter("radius", 0.14)
+	mat.set_shader_parameter("flame_color", flame_color)
+	mat.set_shader_parameter("overdrive_color", overdrive_color)
+	return mat
 
 var trail_x := 0.0  # Smoothed horizontal position of the wing light-lanes.
 
@@ -210,36 +168,29 @@ const IMPORT_FLASH_GLOW := 0.45
 ## effectively invisible during normal driving.
 const GLASS_SKIN_SCALE := 1.06
 const GLASS_SKIN_COLOR := Color(0.65, 0.3, 1.0)
-const GLASS_SKIN_SHADER := "
-shader_type spatial;
-render_mode blend_add, unshaded, cull_disabled, depth_draw_never, shadows_disabled;
+const GLASS_SKIN_SHADER: Shader = preload("res://shaders/ship_glass_skin.gdshader")
 
-uniform vec3 glow_color : source_color = vec3(0.65, 0.3, 1.0);
-uniform float intensity = 0.0; // Runtime visibility, driven by overdrive.
-
-varying vec3 v_pos; // Model-space position used to anchor the animated bands.
-
-void vertex() {
-	v_pos = VERTEX;
-}
-
-void fragment() {
-	// Fresnel effect: transparent head-on, brighter at the silhouette.
-	// abs() handles the backfaces rendered by cull_disabled.
-	float f = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.5);
-	// Two moving model-space waves create the interference pattern.
-	float band = sin(v_pos.y * 7.0 + v_pos.x * 5.0 + TIME * 2.5)
-		* sin(v_pos.z * 6.0 - TIME * 1.7);
-	float shine = 0.5 + 0.5 * band;
-	float glow = f * (0.7 + 0.3 * shine) + 0.06 * shine;
-	ALBEDO = glow_color * glow;
-	ALPHA = clamp(intensity, 0.0, 1.0) * glow * 0.7;
-}
-"
-static var _glass_shader: Shader
 ## Shared material for all glass-skin meshes.
 ## A common intensity keeps the entire shell synchronized.
 var glass_material: ShaderMaterial
+
+func _add_glass_skin(root: Node3D) -> void:
+	glass_material = ShaderMaterial.new()
+	glass_material.shader = GLASS_SKIN_SHADER
+	glass_material.set_shader_parameter("glow_color", effect_overdrive)
+
+	for mesh in root.find_children("*", "MeshInstance3D", true, false):
+		var shell := MeshInstance3D.new()
+		shell.name = "GlassSkin"
+		shell.mesh = (mesh as MeshInstance3D).mesh
+
+		# Child of the mesh itself: inherits its full transform, so
+		# the shell hugs the part and only adds the wrap margin.
+		shell.scale = Vector3.ONE * GLASS_SKIN_SCALE
+		shell.material_override = glass_material
+		shell.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		(mesh as MeshInstance3D).add_child(shell)
+
 
 ## Gradient shader for the wingtip light-lanes.
 ## The glow starts at the wingtip and fades toward the rear of the
@@ -247,57 +198,12 @@ var glass_material: ShaderMaterial
 ##
 ## Intensity is animated at runtime to create a subtle flicker.
 ## Additive blending preserves the emissive appearance.
-const TRAIL_SHADER := "
-shader_type spatial;
-render_mode blend_add, unshaded, depth_draw_never, shadows_disabled;
-
-uniform float intensity = 1.0; // Animated flicker brightness.
-uniform float overdrive = 0.0; // Blends the lane colour from blue to purple.
-
-varying float v_t; // Normalized position from wingtip (0) to tail (1).
-
-void vertex() {
-	// Map the box's local Z coordinate to the wingtip-to-tail gradient.
-	v_t = clamp(0.5 + VERTEX.z / 1.4, 0.0, 1.0);
-}
-
-void fragment() {
-	vec3 blue = vec3(0.13, 0.83, 0.93);
-	vec3 purple = vec3(0.66, 0.33, 0.97);
-	vec3 col = mix(blue, purple, clamp(overdrive, 0.0, 1.0));
-	// Fade the light-lane toward transparency at its rear end.
-	float fade = 1.0 - smoothstep(0.1, 1.0, v_t);
-	ALBEDO = col * intensity;
-	ALPHA = fade * 0.45;
-}
-"
-static var _trail_shader: Shader
+const TRAIL_SHADER: Shader = preload("res://shaders/ship_trail.gdshader")
 
 static func trail_material() -> ShaderMaterial:
-	if _trail_shader == null:
-		_trail_shader = Shader.new()
-		_trail_shader.code = TRAIL_SHADER
-	var m := ShaderMaterial.new()
-	m.shader = _trail_shader
-	return m
-
-func _add_glass_skin(root: Node3D) -> void:
-	if _glass_shader == null:
-		_glass_shader = Shader.new()
-		_glass_shader.code = GLASS_SKIN_SHADER
-	glass_material = ShaderMaterial.new()
-	glass_material.shader = _glass_shader
-	glass_material.set_shader_parameter("glow_color", effect_overdrive)
-	for mesh in root.find_children("*", "MeshInstance3D", true, false):
-		var shell := MeshInstance3D.new()
-		shell.name = "GlassSkin"
-		shell.mesh = (mesh as MeshInstance3D).mesh
-		# Child of the mesh itself: inherits its full transform, so
-		# the shell hugs the part and only adds the wrap margin.
-		shell.scale = Vector3.ONE * GLASS_SKIN_SCALE
-		shell.material_override = glass_material
-		shell.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		(mesh as MeshInstance3D).add_child(shell)
+	var mat := ShaderMaterial.new()
+	mat.shader = TRAIL_SHADER
+	return mat
 
 
 func _build_slim_hull() -> void:

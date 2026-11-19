@@ -13,17 +13,12 @@ const PANEL_WIDTH := 420.0
 const HELP_WIDTH := 900.0
 
 ## Animated neon shader for the front layer of the DashOut title.
-static var TITLE_SHADER: String = FileAccess.get_file_as_string(
-	"res://shaders/title_gradient.gdshader"
-)
+const TITLE_SHADER: Shader = preload("res://shaders/title_gradient.gdshader")
 
 ## Creates the ShaderMaterial used by the animated title label.
 static func title_material() -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
-	var shader := Shader.new()
-	shader.code = TITLE_SHADER
-	mat.shader = shader
-
+	mat.shader = TITLE_SHADER
 	return mat
 
 ## Applies the animated title material after the menu title
