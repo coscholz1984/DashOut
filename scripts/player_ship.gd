@@ -259,7 +259,6 @@ const STRIKER_MODEL_SCALE := Vector3.ONE * 0.5
 const STRIKER_MODEL_ROTATION := Vector3.ZERO
 const STRIKER_MODEL_LIFT := 0.6
 
-
 func _build_striker_hull() -> void:
 	var model := _load_imported_hull(
 		STRIKER_MODEL_PATH, STRIKER_MODEL_SCALE,
@@ -278,6 +277,30 @@ func _build_striker_hull() -> void:
 	wing_anchors = [-0.85, 0.85]
 	_add_hull_light(model)
 
+## Imported Argon model.
+const ARGON_MODEL_PATH := "res://models/Argon.glb"
+const ARGON_MODEL_SCALE := Vector3.ONE * 0.5
+const ARGON_MODEL_ROTATION := Vector3.ZERO
+const ARGON_MODEL_LIFT := 0.6
+
+func _build_argon_hull() -> void:
+	var model := _load_imported_hull(
+		ARGON_MODEL_PATH, ARGON_MODEL_SCALE, ARGON_MODEL_ROTATION, ARGON_MODEL_LIFT
+	)
+	if model == null:
+		_build_classic_hull()
+		return
+	_tint_imported_hull(
+		model, Color.WHITE, Color.WHITE, effect_overdrive
+	)
+
+	# Configure the shared effects for the Argons 3-flame layout
+	engine_anchors = [-0.26, 0.0, 0.26]
+	engine_flame_y = 0.27
+	engine_flame_z = 2.5
+	wing_anchors = [-0.85, 0.85]
+
+	_add_hull_light(model)
 
 ## Loads and configures an imported hull model.
 ## Returns null if the model is unavailable so the caller can

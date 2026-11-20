@@ -249,7 +249,7 @@ func _get_lane_center(lane_index: int, relative_z: float) -> float:
 		return layout.get_lane_center(lane_index)
 
 	var track_distance: float = host.distance_travelled - relative_z
-	return segment_manager.get_lane_center_at(track_distance, lane_index)
+	return segment_manager.get_lane_center_at(lane_index)
 
 
 func _open_lanes_for_path(spawn_z: float) -> Array[int]:
