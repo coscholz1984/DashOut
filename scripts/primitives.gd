@@ -4,6 +4,11 @@ extends Object
 ## Shared factory for procedural meshes, materials and visual effects.
 ## Used by the game's world, ships, pickups and projectiles.
 
+const BLOB_SHADER: Shader = preload("res://shaders/blob_shadow.gdshader")
+const SHELL_SHADER: Shader = preload("res://shaders/energy_shell.gdshader")
+const WAVE_SHADER: Shader = preload("res://shaders/plasma_wave.gdshader")
+const BOLT_SHADER: Shader = preload("res://shaders/plasma_bolt.gdshader")
+
 ## Creates a StandardMaterial3D with optional metallic, emission
 ## and transparency properties.
 static func mat(color: Color, metal := 0.0, rough := 1.0,
@@ -83,9 +88,6 @@ static func sphere(r: float, m: Material, pos: Vector3, parent: Node) -> MeshIns
 	parent.add_child(mi)
 	return mi
 
-## Shared blob-shadow shader, compiled once and reused by all instances.
-static var _blob_shader: Shader
-
 ## Creates a soft radial shadow beneath an object.
 ##
 ## Blob shadows are used when full real-time shadows for entities
@@ -99,24 +101,8 @@ static func shadow_blob(
 		size: Vector2,
 		local_y: float
 ) -> MeshInstance3D:
-	if _blob_shader == null:
-		_blob_shader = Shader.new()
-		_blob_shader.code = """
-shader_type spatial;
-render_mode cull_disabled, unshaded;
-
-uniform float strength = 0.98;
-
-void fragment() {
-	// Use black as the base colour so the unshaded disc darkens the
-	// surface rather than appearing as a white light.
-	ALBEDO = vec3(0.0);
-	float d = length(UV - vec2(0.5, 0.5));
-	ALPHA = strength * (1.0 - smoothstep(0.3, 0.5, d));
-}
-"""
 	var mat := ShaderMaterial.new()
-	mat.shader = _blob_shader
+	mat.shader = BLOB_SHADER
 
 	var mesh := PlaneMesh.new()
 	mesh.size = size
@@ -160,10 +146,6 @@ static func apply_shadow_mode(root: Node3D, full_shadows: bool) -> void:
 	if blob is GeometryInstance3D:
 		(blob as GeometryInstance3D).visible = not full_shadows
 
-
-## Shared energy-shell shader, compiled once and reused by all instances.
-static var _shell_shader: Shader
-
 ## Creates a translucent energy shell around a model.
 ##
 ## The shared shader produces a view-angle-dependent rim glow and
@@ -177,39 +159,8 @@ static func energy_shell(
 		color: Color,
 		wobble := 0.02
 ) -> MeshInstance3D:
-	if _shell_shader == null:
-		_shell_shader = Shader.new()
-		_shell_shader.code = """
-shader_type spatial;
-render_mode cull_disabled, blend_add, unshaded;
-
-uniform vec4 shell_color : source_color =
-	vec4(0.13, 0.83, 1.0, 0.5);
-uniform float intensity = 1.0;
-uniform float wobble = 0.02;
-uniform float ripple = 0.0;
-
-void vertex() {
-	// Breathing wobble: the surface ripples gently along y.
-	VERTEX += NORMAL * sin(TIME * 5.0 + VERTEX.y * 4.0) * wobble;
-}
-
-void fragment() {
-	// Fresnel edge: bright at the silhouette, invisible head-on.
-	// abs() because cull_disabled also renders backfaces, whose
-	// NORMAL points the other way.
-	float f = pow(1.0 - abs(dot(NORMAL, VIEW)), 3.0);
-	// Collision / near-miss ripple: a rapid pulsing SURGE layered
-	// on the steady glow while the ripple decays (main.gd drives
-	// it from crashes, shielded rams and traffic flybys).
-	float surge = 1.0 + ripple * (1.5 + 1.5 * sin(TIME * 24.0));
-	ALPHA = shell_color.a * f * intensity * surge;
-	ALBEDO = shell_color.rgb;
-	EMISSION = shell_color.rgb * f * intensity * surge;
-}
-"""
 	var mat := ShaderMaterial.new()
-	mat.shader = _shell_shader
+	mat.shader = SHELL_SHADER
 	mat.set_shader_parameter("shell_color", color)
 	mat.set_shader_parameter("wobble", wobble)
 
@@ -253,10 +204,6 @@ static func set_shell_ripple(
 	if mat != null:
 		mat.set_shader_parameter("ripple", clampf(value, 0.0, 1.0))
 
-
-## Shared plasma-wave shader, compiled once and reused by all instances.
-static var _wave_shader: Shader
-
 ## Creates the plasma projectile used by SUPER SHOT.
 ##
 ## Unlike the energy shell, this shader produces a visible,
@@ -266,37 +213,8 @@ static var _wave_shader: Shader
 ## The projectile never casts shadows. Its scale can be animated
 ## by the entity manager as it travels.
 static func plasma_wave(parent: Node, pos: Vector3) -> MeshInstance3D:
-	if _wave_shader == null:
-		_wave_shader = Shader.new()
-		_wave_shader.code = """
-shader_type spatial;
-render_mode cull_disabled, blend_add, unshaded;
-
-uniform vec4 core_color : source_color =
-	vec4(0.20, 0.45, 1.0, 0.4);
-uniform vec4 rim_color : source_color =
-	vec4(0.65, 0.90, 1.0, 1.0);
-uniform float intensity = 1.0;
-
-void fragment() {
-	// Brighten the silhouette while keeping the backfaces consistent.
-	float f = pow(1.0 - abs(dot(NORMAL, VIEW)), 2.5);
-	// Layered sine waves create animated turbulence inside the plasma.
-	float t = TIME * 6.0;
-	float turb = sin(VERTEX.x * 8.0 + t) * 0.5
-		+ sin(VERTEX.y * 11.0 - t * 1.3) * 0.3
-		+ sin((VERTEX.x + VERTEX.y) * 6.0 + t * 0.7) * 0.2;
-	turb = 0.5 + 0.5 * turb;
-	vec3 col = mix(core_color.rgb, rim_color.rgb, f);
-	// Keep the interior visible while allowing the rim to become brighter.
-	ALPHA = core_color.a * (0.45 + 0.55 * f)
-		* (0.7 + 0.3 * turb) * intensity;
-	EMISSION = col * (0.6 + 1.4 * f)
-		* intensity * (0.8 + 0.4 * turb);
-}
-"""
 	var mat := ShaderMaterial.new()
-	mat.shader = _wave_shader
+	mat.shader = WAVE_SHADER
 	mat.set_shader_parameter("core_color", Color(0.20, 0.45, 1.0, 0.4))
 	mat.set_shader_parameter("rim_color", Color(0.65, 0.90, 1.0, 1.0))
 	mat.set_shader_parameter("intensity", 1.0)
@@ -319,9 +237,6 @@ void fragment() {
 	parent.add_child(wave)
 	return wave
 
-## Shared plasma-bolt shader, compiled once and reused by all instances.
-static var _bolt_shader: Shader
-
 ## Creates the projectile used by the normal blaster.
 ##
 ## The shader produces a semi-transparent plasma body with animated
@@ -333,38 +248,9 @@ static func plasma_bullet(
 	parent: Node, pos: Vector3,
 	color := Color(0.45, 0.15, 1.0)
 ) -> MeshInstance3D:
-	if _bolt_shader == null:
-		_bolt_shader = Shader.new()
-		_bolt_shader.code = """
-shader_type spatial;
-render_mode cull_disabled, blend_add, unshaded;
-
-uniform vec4 core_color : source_color =
-	vec4(0.45, 0.15, 1.0, 0.6);
-uniform vec4 rim_color : source_color =
-	vec4(0.85, 0.6, 1.0, 1.0);
-uniform float intensity = 1.0;
-
-void fragment() {
-	// Brighten the silhouette while keeping the backfaces consistent.
-	float f = pow(1.0 - abs(dot(NORMAL, VIEW)), 2.0);
-	// Fast, small-scale turbulence makes the projectile visibly churn.
-	float t = TIME * 9.0;
-	float turb = sin(VERTEX.x * 14.0 + t) * 0.5
-		+ sin(VERTEX.y * 17.0 - t * 1.4) * 0.5;
-	turb = 0.5 + 0.5 * turb;
-	// Fade the rear of the projectile so it dissolves toward its tail.
-	// Fade emission as well as transparency to darken the tail.
-	float tail = 1.0 - smoothstep(0.0, 1.0, VERTEX.z);
-	vec3 col = mix(core_color.rgb, rim_color.rgb, f);
-	ALPHA = core_color.a * (0.5 + 0.5 * f)
-		* (0.7 + 0.3 * turb) * tail * intensity;
-	EMISSION = col * (0.7 + 1.3 * f)
-		* intensity * (0.8 + 0.4 * turb) * tail;
-}
-"""
 	var mat := ShaderMaterial.new()
-	mat.shader = _bolt_shader
+	mat.shader = BOLT_SHADER
+
 	# Tint the core with the selected effect colour and lighten it for the rim.
 	mat.set_shader_parameter("core_color", Color(color, 0.6))
 	mat.set_shader_parameter("rim_color", color.lightened(0.4))
