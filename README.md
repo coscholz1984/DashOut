@@ -101,6 +101,7 @@ Third-party assets used (all **CC0** unless noted):
 | *A Block in Space* (menu music) | [opengameart.org](https://opengameart.org/content/a-block-in-space) | Umplix, CC0 |
 | *Trace Agent* (race music) | [opengameart.org](https://opengameart.org/content/trace-agent) | Vitalezzz, CC0 |
 | Dispatcher / Imperial / Insurgent / Striker ships | [opengameart.org](https://opengameart.org/content/lowpoly-spaceships-pack) | quaternius, CC0 |
+| Argon | based on [opengameart.org](https://opengameart.org/content/overtone) | @KyraTech_13, CC BY-SA 4.0 |
 | traffic_yellow / traffic_red | [opengameart.org](https://opengameart.org/content/scifi-hoverships) | knekko, CC0 |
 | ammo box | [opengameart.org](https://opengameart.org/content/ammo-box-pack) | Yughues, CC0 |
 | dollar | [opengameart.org](https://opengameart.org/content/dollars-pack) | wobba89, CC0 |
