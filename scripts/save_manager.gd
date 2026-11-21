@@ -19,33 +19,74 @@ const EFFECT_COLORS := {
 	"effect_overdrive": "a855f7"
 }
 ## Available player ship hulls.
-## Each entry defines the model identifier, display name, price and description.
+## Each entry defines the model identity, background, affiliation and
+## fictional performance ratings. Ratings are currently display-only.
 ## Hull geometry comes from the equipped model; paint and effect colours
 ## are managed separately.
 const SHIP_MODELS := [
 	{
-		"id": "slim",
-		"name": "Slimline",
+		"id": "spectre",
+		"name": "VX-7 Spectre",
 		"price": 0,
-		"desc": "The lean beginner racer — external model with its own materials"
+		"desc": "A lightweight reconnaissance racer built for speed.",
+		"affiliation": "Vektor Dynamics",
+		"description": "Originally developed as a high-speed reconnaissance platform for Vektor Dynamics, the VX-7 was designed to operate ahead of corporate security convoys. Its experimental propulsion system delivers exceptional acceleration and top speed, while its stripped-down frame offers little protection in a collision. Decommissioned prototypes eventually found their way onto the civilian racing circuit.",
+		"logo": "res://models/arrow_logo.glb",
+		"stats": {
+			"speed": 9,
+			"acceleration": 9,
+			"handling": 7,
+			"defence": 3,
+			"firepower": 5
+		}
 	},
 	{
 		"id": "dispatcher",
-		"name": "Dispatcher",
+		"name": "Dispatcher VI2",
 		"price": 65000,
-		"desc": "Imported Dispatcher cruiser — external model with its own materials"
+		"desc": "A heavily armoured logistics and escort craft.",
+		"affiliation": "Orion Logistics",
+		"description": "Designed by Orion Logistics to protect high-value cargo convoys travelling through contested territory, the Dispatcher prioritises durability and reliability over outright speed. Its reinforced chassis and powerful stabilisation systems make it a dependable platform under pressure, although its considerable mass limits acceleration and manoeuvrability.",
+		"logo": "res://models/arrow_logo.glb",
+		"stats": {
+			"speed": 6,
+			"acceleration": 5,
+			"handling": 6,
+			"defence": 9,
+			"firepower": 7
+		}
 	},
 	{
 		"id": "striker",
-		"name": "Striker",
+		"name": "Z-Striker",
 		"price": 80000,
-		"desc": "The ultimate interceptor — external model with its own materials"
+		"desc": "A high-performance corporate interceptor.",
+		"affiliation": "Kestrel Defence Systems",
+		"description": "The Striker was developed by Kestrel Defence Systems as a rapid-response interceptor for urban security forces. Its aggressive propulsion profile and responsive flight-control system allow it to accelerate rapidly and change direction with precision. Although less heavily protected than dedicated escort craft, its integrated offensive systems make it a formidable competitor.",
+		"logo": "res://models/arrow_logo.glb",
+		"stats": {
+			"speed": 8,
+			"acceleration": 10,
+			"handling": 8,
+			"defence": 5,
+			"firepower": 9
+		}
 	},
 	{
 		"id": "argon",
-		"name": "Argon",
+		"name": "Argon X7",
 		"price": 160000,
-		"desc": "Argon X7 — external model with its own materials"
+		"desc": "An experimental high-speed racing platform.",
+		"affiliation": "Argon Aeronautics",
+		"description": "The Argon X7 is an experimental racing platform developed by Argon Aeronautics to push the limits of civilian propulsion technology. Its advanced multi-engine configuration produces exceptional top speed without sacrificing too much control. Extremely expensive to manufacture and maintain, the X7 remains a rare sight outside exclusive corporate racing programmes.",
+		"logo": "res://models/arrow_logo.glb",
+		"stats": {
+			"speed": 10,
+			"acceleration": 8,
+			"handling": 8,
+			"defence": 6,
+			"firepower": 7
+		}
 	},
 ]
 ## Available track themes and their world colour palettes.

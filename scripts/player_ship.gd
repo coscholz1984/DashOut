@@ -103,14 +103,14 @@ func _ready() -> void:
 
 	# Build the selected hull, falling back to the classic
 	# procedural design if the model is unknown or unavailable.
-	match str(skin.get("model", "slim")):
+	match str(skin.get("model", "spectre")):
 		"levdart":
 			_build_lev_dart_hull()
 		"catamaran":
 			_build_catamaran_hull()
 		"twinfin":
 			_build_twinfin_hull()
-		"slim":
+		"spectre":
 			_build_slim_hull()
 		"dispatcher":
 			_build_dispatcher_hull()
@@ -300,9 +300,9 @@ func _build_argon_hull() -> void:
 
 	# Configure the Argon's three exhaust outlets.
 	engine_flame_positions = [
-		Vector3(-0.4, 0.5, 0.8),
-		Vector3(0.0, 0.5, 1.1),
-		Vector3(0.4, 0.5, 0.8)
+		Vector3(-0.4, 0.5, 1.7),
+		Vector3(0.0, 0.5, 2.0),
+		Vector3(0.4, 0.5, 1.7)
 	]
 	wing_anchors = [-0.85, 0.85]
 
