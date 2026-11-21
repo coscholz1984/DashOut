@@ -111,7 +111,7 @@ func get_lane_center(lane_index: int) -> float:
 	return base_layout.get_lane_center(lane_index)
 
 
-func get_lane_center_at(track_distance: float, lane_index: int) -> float:
+func get_lane_center_at(lane_index: int) -> float:
 	return base_layout.get_lane_center(lane_index)
 
 ## True only if this physical lane remains open for the complete path.

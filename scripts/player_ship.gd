@@ -116,6 +116,8 @@ func _ready() -> void:
 			_build_dispatcher_hull()
 		"striker":
 			_build_striker_hull()
+		"argon":
+			_build_argon_hull()
 		_:
 			_build_classic_hull()
 
@@ -279,9 +281,9 @@ func _build_striker_hull() -> void:
 
 ## Imported Argon model.
 const ARGON_MODEL_PATH := "res://models/Argon.glb"
-const ARGON_MODEL_SCALE := Vector3.ONE * 0.5
+const ARGON_MODEL_SCALE := Vector3.ONE * 0.28
 const ARGON_MODEL_ROTATION := Vector3.ZERO
-const ARGON_MODEL_LIFT := 0.6
+const ARGON_MODEL_LIFT := 0.5
 
 func _build_argon_hull() -> void:
 	var model := _load_imported_hull(
@@ -295,9 +297,9 @@ func _build_argon_hull() -> void:
 	)
 
 	# Configure the shared effects for the Argons 3-flame layout
-	engine_anchors = [-0.26, 0.0, 0.26]
-	engine_flame_y = 0.27
-	engine_flame_z = 2.5
+	engine_anchors = [-0.3, 0.0, 0.3]
+	engine_flame_y = 0.6
+	engine_flame_z = 1.3
 	wing_anchors = [-0.85, 0.85]
 
 	_add_hull_light(model)

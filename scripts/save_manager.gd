@@ -41,6 +41,12 @@ const SHIP_MODELS := [
 		"price": 80000,
 		"desc": "The ultimate interceptor — external model with its own materials"
 	},
+	{
+		"id": "argon",
+		"name": "Argon",
+		"price": 160000,
+		"desc": "Argon X7 — external model with its own materials"
+	},
 ]
 ## Available track themes and their world colour palettes.
 ## Each entry defines its purchase price and the colours used by
