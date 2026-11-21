@@ -73,17 +73,17 @@ var fx_flash := 0.0
 var effect_flame := Color(0.25, 0.5, 1.0)
 var effect_overdrive := Color(0.66, 0.33, 0.97)
 
-## Per-hull anchor positions for shared engine and race effects.
-## Hull builders configure these values before the effect builders run.
-## This allows different ship designs to reuse the same effect logic.
-var engine_anchors: Array = [-0.38, 0.38]
-var engine_flame_y := 0.32
-
-## Longitudinal position of the exhaust outlets in ship-local space.
-var engine_flame_z := 1.86
+## Local positions of the exhaust flame origins.
+## Hull builders configure one position for each engine.
+## The shared effect builder uses these positions for flame placement
+## and animation.
+var engine_flame_positions: Array[Vector3] = [
+	Vector3(-0.38, 0.32, 1.86),
+	Vector3(0.38, 0.32, 1.86)
+]
 
 ## Horizontal anchor positions for the wing light-lanes.
-var wing_anchors: Array = [-0.85, 0.85]
+var wing_anchors: Array[float] = [-0.85, 0.85]
 
 func _init(craft_skin: Dictionary, as_preview: bool = false) -> void:
 	skin = craft_skin
@@ -219,11 +219,11 @@ func _build_slim_hull() -> void:
 		model, Color.WHITE, Color.WHITE, effect_overdrive
 	)
 
-	# Configure the shared effects for the Slimline's exhaust outlets
-	# and wingtip positions.
-	engine_anchors = [-0.26, 0.26]
-	engine_flame_y = 0.27
-	engine_flame_z = 2.5
+	# Configure the Slimline's two exhaust outlets and wingtip positions.
+	engine_flame_positions = [
+		Vector3(-0.26, 0.27, 2.5),
+		Vector3(0.26, 0.27, 2.5)
+	]
 	wing_anchors = [-0.85, 0.85]
 
 	_add_hull_light(model)
@@ -247,11 +247,12 @@ func _build_dispatcher_hull() -> void:
 	_tint_imported_hull(
 		model, Color.WHITE, Color.WHITE, effect_overdrive
 	)
-	# One central exhaust flame.
-	engine_anchors = [0.0]
-	engine_flame_y = 0.65
-	engine_flame_z = 2.4
+	# Configure the single central exhaust outlet.
+	engine_flame_positions = [
+		Vector3(0.0, 0.65, 2.4)
+	]
 	wing_anchors = [-0.85, 0.85]
+	
 	_add_hull_light(model)
 
 
@@ -272,11 +273,12 @@ func _build_striker_hull() -> void:
 	_tint_imported_hull(
 		model, Color.WHITE, Color.WHITE, effect_overdrive
 	)
-	# One central exhaust flame.
-	engine_anchors = [0.0]
-	engine_flame_y = 0.725
-	engine_flame_z = 2.2
+	# Configure the single central exhaust outlet.
+	engine_flame_positions = [
+		Vector3(0.0, 0.725, 2.2)
+	]
 	wing_anchors = [-0.85, 0.85]
+	
 	_add_hull_light(model)
 
 ## Imported Argon model.
@@ -296,10 +298,12 @@ func _build_argon_hull() -> void:
 		model, Color.WHITE, Color.WHITE, effect_overdrive
 	)
 
-	# Configure the shared effects for the Argons 3-flame layout
-	engine_anchors = [-0.3, 0.0, 0.3]
-	engine_flame_y = 0.6
-	engine_flame_z = 1.3
+	# Configure the Argon's three exhaust outlets.
+	engine_flame_positions = [
+		Vector3(-0.4, 0.5, 0.8),
+		Vector3(0.0, 0.5, 1.1),
+		Vector3(0.4, 0.5, 0.8)
+	]
 	wing_anchors = [-0.85, 0.85]
 
 	_add_hull_light(model)
@@ -569,10 +573,11 @@ func _build_catamaran_hull() -> void:
 	# Rear keel light across the channel
 	var keel := ShipMaterials.neon(Color("22d3ee"), 1.2)
 	Primitives.box(Vector3(0.22, 0.05, 1.4), keel, Vector3(0, 0.05, -1.5), hull)
-	# Place exhaust flames at the twin hulls and light-lanes at the
-	# outer winglet tips.
-	engine_anchors = [-0.55, 0.55]
-	engine_flame_y = 0.3
+	# Place exhaust flames at the twin hulls.
+	engine_flame_positions = [
+		Vector3(-0.55, 0.3, 1.86),
+		Vector3(0.55, 0.3, 1.86)
+	]
 	wing_anchors = [-1.28, 1.28]
 
 
@@ -614,31 +619,49 @@ func _build_twinfin_hull() -> void:
 	var keel := ShipMaterials.neon(Color("22d3ee"), 1.2)
 	Primitives.box(Vector3(0.22, 0.05, 1.4), keel, Vector3(0, 0.05, -1.5), hull)
 	# Use one central exhaust flame at the master engine.
-	engine_anchors = [0.0]
-	engine_flame_y = 0.4
+	engine_flame_positions = [
+		Vector3(0.0, 0.4, 1.86)
+	]
 	wing_anchors = [-0.96, 0.96]
 
 
 ## Builds the exhaust flames and blob shadow shared by all hulls.
 func _build_engine_effects() -> void:
-	# Create one exhaust flame per configured engine anchor.
+	# Create one exhaust flame per configured engine position.
 	# Flames are children of the hull so they follow its hover and
 	# banking animation. The 180-degree hull rotation reverses the
 	# local horizontal and longitudinal anchor coordinates.
 	var flame_mat := flame_material(
 		FLAME_OPACITY, effect_flame, effect_overdrive
 	)
+
 	# Give single-engine ships a larger exhaust flame.
-	var big_flame := engine_anchors.size() == 1
-	for x in engine_anchors:
-		var fl := Primitives.sphere(0.14, flame_mat, Vector3(-x, engine_flame_y, -engine_flame_z), hull)
-		fl.scale = Vector3(0.8, 0.8, 2.0) if big_flame else Vector3(0.5, 0.5, 1.4)
+	var big_flame := engine_flame_positions.size() == 1
+
+	for engine_position in engine_flame_positions:
+		var flame_position := Vector3(
+			-engine_position.x,
+			engine_position.y,
+			-engine_position.z
+		)
+
+		var fl := Primitives.sphere(
+			0.14, flame_mat, flame_position, hull
+		)
+		fl.scale = (
+			Vector3(0.8, 0.8, 2.0)
+			if big_flame
+			else Vector3(0.5, 0.5, 1.4)
+		)
 		flames.append(fl)
+
 	# Add a soft blob shadow beneath the ship. It is used when
 	# real-time shadows are disabled.
 	var blob := Primitives.shadow_blob(self, Vector2(2.6, 3.8), -0.275)
+
 	# Offset the shadow to approximate the direction of the world sun.
 	blob.position = Vector3(0.22, -0.275, -0.38)
+
 	# Select real mesh shadows or the blob-shadow fallback.
 	# The world lighting remains enabled in either mode.
 	Primitives.apply_shadow_mode(self, SaveManager.data.full_shadows)
@@ -772,20 +795,27 @@ const FLAME_IDLE_FLICKER := 0.25
 ## flame_intensity controls the transition between idle and
 ## speed-dependent flicker.
 func _process(_delta: float) -> void:
-	for fl in flames:
+	for i in flames.size():
+		var fl := flames[i]
+		var engine_position := engine_flame_positions[i]
+
 		# Randomize the flame size while preserving a minimum idle flicker.
 		var flick := 0.5 + randf() * 0.7
 		var fi := FLAME_IDLE_FLICKER + flame_intensity * (1.0 - FLAME_IDLE_FLICKER)
+
 		fl.scale = Vector3(
 			0.4 + fi * 0.5 * flick,
 			0.4 + fi * 0.5 * flick,
 			1.0 + fi * 1.6 * flick
 		)
-		# Keep the flame's inner edge anchored at the engine outlet.
-		fl.position.z = -engine_flame_z + 0.14 * (1.0 - fl.scale.z)
+
+		# Keep the flame's inner edge anchored at its individual engine outlet.
+		fl.position.z = -engine_position.z + 0.14 * (1.0 - fl.scale.z)
+
 		(fl.material_override as ShaderMaterial).set_shader_parameter(
 			"intensity", 1.2 + fi * 2.4 * flick
 		)
+
 		# Blend the exhaust colour toward purple during overdrive.
 		(fl.material_override as ShaderMaterial).set_shader_parameter(
 			"overdrive", fx_overdrive
